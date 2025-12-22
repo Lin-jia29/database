@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <meta name="theme-color" content="#007bff">
+
+  <!-- iOS 主畫面圖示與全螢幕 -->
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ quiz_title }}｜問卷</title>
+
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="/static/script.js" defer></script>
+</head>
+
+<body class="app" data-quiz="values">
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("{{ url_for('static', filename='service-worker.js') }}");
+      });
+    }
+  </script>
+
+  <div class="bg"></div>
+
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">AI</div>
+        <div class="brand-text">
+          <div class="title">{{ quiz_title }}</div>
+          <div class="subtitle">卡片式對話問答（可選擇也可自由輸入）</div>
+        </div>
+      </div>
+
+      <div>
+        <a class="btn secondary" href="/">回首頁</a>
+      </div>
+    </header>
+
+    <section class="chat-wrap" id="chatWrap">
+      <div class="chat-head">
+        <div>
+          <div class="h-title">價值觀分析系統</div>
+          <div class="h-sub">共 12 題（含年齡/性別/職業）｜完成後會產出繁體中文人格分析與投保建議</div>
+        </div>
+        <div class="note" id="progressText">進度：0 / 12</div>
+      </div>
+
+      <div class="chat-body" id="chatBody">
+        <!-- JS 會把 AI 問題卡片一題題塞進來 -->
+      </div>
+
+      <div class="chat-input">
+        <input id="freeText" type="text" placeholder="你也可以在這裡補充自己的文字（選填）" />
+        <button class="btn" id="sendFreeText">送出文字</button>
+      </div>
+    </section>
+
+    <div class="note" style="margin-top:12px;">
+      提示：你可以只點選選項，也可以額外輸入文字補充；系統會把兩者都記錄下來。
+    </div>
+  </main>
+
+  <script>
+    window.__QUIZ_CONFIG__ = {
+      quiz_id: "values",
+      total: 12,
+      title: "價值觀分析系統"
+    };
+  </script>
+</body>
+</html>

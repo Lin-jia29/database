@@ -1,0 +1,692 @@
+<!-- templates/result_display.html -->
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>分析結果｜AI 顧問系統</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <!-- Chart.js (Demo 方便：用 CDN；若無網路可改成本機檔案) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* 只補「結果頁」需要但你 style.css 可能沒定義的 class，避免版面很空/跑版 */
+    .page { margin-top:16px; }
+    .section-title{ font-weight:900; letter-spacing:.2px; }
+    .subtle{ color: rgba(71,85,105,.95); font-size:12.5px; margin-top:4px; }
+
+    .stack{ display:grid; gap:14px; margin-top:14px; }
+    .grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+    .grid-3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:14px; }
+    @media (max-width: 980px){ .grid-3{ grid-template-columns: 1fr; } }
+    @media (max-width: 820px){ .grid-2{ grid-template-columns: 1fr; } }
+
+    .card{
+      border:1px solid rgba(226,232,240,.9);
+      background: rgba(255,255,255,.82);
+      backdrop-filter: blur(10px);
+      border-radius: 22px;
+      box-shadow: 0 18px 45px rgba(15,23,42,.08);
+      padding: 16px;
+    }
+    .card.tight{ padding: 14px; }
+    .card .h{
+      font-weight: 900;
+      letter-spacing:.2px;
+      font-size: 14.5px;
+      margin-bottom: 8px;
+    }
+    .badge-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top: 10px; }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:12.5px;
+      font-weight: 800;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(99,102,241,.18);
+      background: rgba(99,102,241,.06);
+      color: rgba(15,23,42,.92);
+      white-space: nowrap;
+    }
+    .pill.gray{
+      border-color: rgba(148,163,184,.35);
+      background: rgba(248,250,252,.7);
+      color: rgba(15,23,42,.78);
+    }
+    .pill.warn{
+      border-color: rgba(245,158,11,.25);
+      background: rgba(245,158,11,.10);
+      color: rgba(15,23,42,.92);
+    }
+
+    .lead{
+      font-size: 14px;
+      line-height: 1.75;
+      color: rgba(15,23,42,.92);
+      margin-top: 8px;
+    }
+
+    .chart-box{ display:grid; gap:10px; }
+    .chart-wrap{
+      border:1px solid rgba(226,232,240,.9);
+      border-radius: 18px;
+      padding: 12px;
+      background: rgba(255,255,255,.75);
+      min-height: 320px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    canvas{ max-width:100%; }
+
+    .list{
+      margin: 0;
+      padding-left: 18px;
+      line-height: 1.75;
+      color: rgba(15,23,42,.90);
+      font-size: 13.8px;
+    }
+
+    .product-grid{ display:grid; gap:12px; }
+    .product-card{
+      border:1px solid rgba(226,232,240,.9);
+      border-radius: 20px;
+      background: rgba(255,255,255,.86);
+      padding: 14px;
+    }
+    .product-title{ font-weight: 950; font-size: 14.5px; line-height:1.4; }
+    .meta-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    .kv{ font-size: 12.5px; color: rgba(71,85,105,.95); }
+    .kv b{ color: rgba(15,23,42,.92); }
+
+    .btn-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .btn-link{
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-weight: 900;
+      font-size: 13px;
+      border: 1px solid rgba(99,102,241,.18);
+      background: rgba(255,255,255,.92);
+      color: rgba(15,23,42,.92);
+    }
+    .btn-link.primary{
+      border: none;
+      color: #fff;
+      background: linear-gradient(135deg, rgba(43,89,255,1), rgba(124,58,237,1));
+      box-shadow: 0 16px 34px rgba(43,89,255,.18);
+    }
+
+    .divider{ height:1px; background: rgba(226,232,240,.9); margin: 12px 0; }
+
+    .muted-note{
+      font-size: 12.5px;
+      color: rgba(100,116,139,.95);
+      line-height: 1.6;
+      margin-top: 8px;
+    }
+
+    .empty{
+      border:1px dashed rgba(148,163,184,.55);
+      background: rgba(248,250,252,.6);
+      border-radius: 18px;
+      padding: 14px;
+      color: rgba(71,85,105,.95);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+  </style>
+</head>
+
+<body class="app">
+  <div class="bg"></div>
+
+  {% if error %}
+    <main class="shell page">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo">AI</div>
+          <div class="brand-text">
+            <div class="title">分析結果</div>
+            <div class="subtitle">找不到結果資料</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <a class="btn-link" href="{{ url_for('home') }}">回首頁</a>
+          <a class="btn-link primary" href="{{ url_for('quiz_entry', quiz_id='insurance') }}">做「推薦保單系統」</a>
+          <a class="btn-link primary" href="{{ url_for('quiz_entry', quiz_id='values') }}">做「價值觀分析系統」</a>
+        </div>
+      </header>
+
+      <div class="stack">
+        <div class="card">
+          <div class="error">{{ error }}</div>
+          <div class="muted-note">建議：請回到首頁重新填寫問卷，或確認網址中的 user_id 是否正確。</div>
+        </div>
+      </div>
+    </main>
+  {% else %}
+    {% set r = final_result or {} %}
+    {% set is_values = (r.get('value_profile') is not none) %}
+    {% set is_insurance = (r.get('person_summary') is not none) %}
+
+    <main class="shell page">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo">AI</div>
+          <div class="brand-text">
+            <div class="title">測驗結果</div>
+            <div class="subtitle">規則 / 資料庫 + AI 文案（繁體中文）</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <a class="btn-link" href="{{ url_for('home') }}">回首頁</a>
+          <a class="btn-link primary" href="{{ url_for('quiz_entry', quiz_id='insurance') }}">做「推薦保單系統」</a>
+          <a class="btn-link primary" href="{{ url_for('quiz_entry', quiz_id='values') }}">做「價值觀分析系統」</a>
+        </div>
+      </header>
+
+      {% if is_values %}
+        <!-- =======================
+             價值觀分析報告（含圖表 + Demo 可講的分層策略）
+             ======================= -->
+        <div class="stack">
+          <div class="card">
+            <div class="section-title">價值觀分析報告</div>
+            <div class="subtle">含量化維度 + 圖表 + 分階段策略</div>
+          </div>
+
+          <!-- 1) Summary -->
+          <div class="card">
+            <div class="h">一、結論摘要（你是什麼型）</div>
+
+            {% set vp = r.get('value_profile') or {} %}
+            <div style="font-weight:950; font-size:16px; margin-top:6px;">
+              {{ vp.get('Type','（未提供類型）') }}
+            </div>
+            <div class="lead">
+              {{ vp.get('Reason','（未提供分析摘要）') }}
+            </div>
+
+            <div class="badge-row">
+              <span class="pill gray">填答完整度：<b id="kpiCompletion">—</b></span>
+              <span class="pill gray">信心指標：<b id="kpiConfidence">—</b></span>
+              <span class="pill warn">輸出模式：<b id="kpiMode">規則量化 + AI 文案（若失敗自動 fallback）</b></span>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="muted-note">
+              「我們把抽象的價值觀拆成可量化的 6 維度（雷達圖），再把每題回答轉成 0–100 的單題分數（長條圖）。最後用分層策略把結果連回實際保險規劃流程。」
+            </div>
+          </div>
+
+          <!-- 2) Charts -->
+          <div class="grid-2">
+            <div class="card">
+              <div class="h">二、價值觀雷達圖（6 維度）</div>
+              <div class="subtle">逐維度解釋「為什麼推薦策略會長這樣」。</div>
+
+              <div class="chart-box">
+                <div class="chart-wrap">
+                  <canvas id="radarChart" width="480" height="360"></canvas>
+                </div>
+                <div class="muted-note" id="radarExplain"></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="h">三、回答分佈（Q1–Q10 轉成 0–100）</div>
+              <div class="subtle">指出哪些題目拉高了「風險/保障/保費敏感」傾向。</div>
+
+              <div class="chart-box">
+                <div class="chart-wrap">
+                  <canvas id="barChart" width="480" height="360"></canvas>
+                </div>
+                <div class="muted-note" id="barExplain"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3) Insights / Strengths / Blindspots -->
+          <div class="card">
+            <div class="h">四、洞察（Insights）</div>
+            <ol class="list" id="insightsList">
+              <li>（系統將依量化分數生成洞察…）</li>
+            </ol>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="h">五、優勢（Strengths）</div>
+              <ul class="list" id="strengthList">
+                <li>（系統將依量化分數生成優勢…）</li>
+              </ul>
+            </div>
+            <div class="card">
+              <div class="h">六、盲點提醒（Blindspots）</div>
+              <ul class="list" id="blindspotList">
+                <li>（系統將依量化分數生成盲點…）</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- 4) Decision strategy -->
+          <div class="card">
+            <div class="h">七、分層決策策略</div>
+            <div class="subtle">把「價值觀」落地成「保險規劃順序」。</div>
+
+            <div class="divider"></div>
+
+            <div class="grid-3">
+              <div class="card tight" style="box-shadow:none;">
+                <div style="font-weight:950;">第 1 層：先補底座（風險暴露）</div>
+                <div class="muted-note" id="layer1"></div>
+              </div>
+              <div class="card tight" style="box-shadow:none;">
+                <div style="font-weight:950;">第 2 層：再做結構（責任與目標）</div>
+                <div class="muted-note" id="layer2"></div>
+              </div>
+              <div class="card tight" style="box-shadow:none;">
+                <div style="font-weight:950;">第 3 層：最後才優化（成本/流動性）</div>
+                <div class="muted-note" id="layer3"></div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="h" style="margin-bottom:6px;">八、下一步建議（可當作結尾收斂）</div>
+            <ul class="list" id="nextStepsList">
+              <li>（系統將自動生成下一步建議…）</li>
+            </ul>
+          </div>
+
+          <!-- 5) Advice list from AI (optional) -->
+          <div class="card">
+            <div class="h">九、顧問建議</div>
+            {% set adv = r.get('insurance_advice') or [] %}
+            {% if adv and adv|length > 0 %}
+              <ul class="list">
+                {% for a in adv %}
+                  <li>{{ a }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <div class="empty">目前沒有顧問建議文字（AI 可能回傳格式不完整或尚未設定此欄位）。不影響圖表與洞察展示。</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- =======================
+             JS：圖表 + 自動洞察生成（即使後端沒提供 value_metrics 也能 Demo）
+             ======================= -->
+        <script id="result-data" type="application/json">
+          {{ (final_result or {}) | tojson }}
+        </script>
+
+        <script>
+          // ---------- 1) 安全讀 JSON ----------
+          let resultData = {};
+          try {
+            resultData = JSON.parse(document.getElementById("result-data").textContent || "{}");
+          } catch (e) {
+            console.warn("result-data JSON parse failed:", e);
+            resultData = {};
+          }
+          const profileType = (resultData?.value_profile?.Type || resultData?.value_profile?.type || "").toString();
+
+          // 後端可選提供：resultData.value_metrics
+          const metrics = (resultData && resultData.value_metrics) ? resultData.value_metrics : {};
+
+          // ---------- 2) 工具：清洗數字、驗證資料 ----------
+          function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+
+          // 把任何值轉成 0~100 的 number，不可轉就回 null
+          function toScore(x){
+            if (x === null || x === undefined) return null;
+            if (typeof x === "number") return clamp(x, 0, 100);
+            if (typeof x === "string") {
+              const m = x.match(/-?\d+(\.\d+)?/); // 抓第一個數字
+              if (!m) return null;
+              const n = Number(m[0]);
+              return Number.isFinite(n) ? clamp(n, 0, 100) : null;
+            }
+            return null;
+          }
+
+          // 驗證：labels/data 都要是陣列且長度相同，且 data 至少有一個 > 0
+          function normalizeChart(raw, fallback){
+            const labels = Array.isArray(raw?.labels) ? raw.labels : null;
+            const dataRaw = Array.isArray(raw?.data) ? raw.data : null;
+
+            if (!labels || !dataRaw || labels.length === 0 || labels.length !== dataRaw.length) {
+              return fallback;
+            }
+
+            const data = dataRaw.map(v => {
+              const s = toScore(v);
+              return (s === null) ? 0 : s;
+            });
+
+            const hasSignal = data.some(v => v > 0);
+            return hasSignal ? { labels, data } : fallback;
+          }
+
+          // ---------- 3) Demo fallback（你原本的） ----------
+          function defaultRadarByType(type){
+            const t = (type || "").toLowerCase();
+            const labels = [
+              "風險承受度",
+              "保障安全感需求",
+              "家庭責任導向",
+              "健康風險敏感度",
+              "長期規劃程度",
+              "性價比/流動性偏好"
+            ];
+
+            if (t.includes("進取") || t.includes("積極") || t.includes("投資")) {
+              return { labels, data: [78, 42, 45, 48, 72, 36] };
+            }
+            if (t.includes("保守")) {
+              return { labels, data: [30, 82, 62, 78, 52, 70] };
+            }
+            if (t.includes("保障")) {
+              return { labels, data: [38, 88, 58, 82, 50, 60] };
+            }
+            if (t.includes("穩健") || t.includes("均衡")) {
+              return { labels, data: [48, 68, 60, 66, 56, 60] };
+            }
+            return { labels, data: [55, 55, 55, 55, 55, 55] };
+          }
+
+          function buildBarFromRadar(radar){
+            const base = radar.data.reduce((a,b)=>a+b,0) / radar.data.length;
+            const labels = Array.from({length:10}, (_,i)=>`Q${i+1}`);
+            const data = labels.map((_,i)=>{
+              const wave = Math.sin((i+1)*1.35) * 8 + Math.cos((i+1)*0.9) * 5;
+              const tilt = (radar.data[(i % radar.data.length)] - 55) * 0.25;
+              return clamp(Math.round(base + wave + tilt), 10, 95);
+            });
+            return { labels, data };
+          }
+
+          // ---------- 4) 決定 radar / bar：先用後端，無效就 fallback ----------
+          const radarFallback = defaultRadarByType(profileType);
+          const barFallback = buildBarFromRadar(radarFallback);
+
+          const radar = normalizeChart(metrics?.charts?.radar, radarFallback);
+          const bar   = normalizeChart(metrics?.charts?.bar, barFallback);
+
+          // KPI（沒有就 Demo 值，避免 0%）
+          const completion = (metrics?.completion != null) ? metrics.completion : 10;
+          const confidence = (metrics?.confidence != null) ? metrics.confidence : 0.78;
+          const mode = (metrics?.mode) ? metrics.mode : "hybrid";
+
+          document.getElementById("kpiCompletion").textContent = `${completion}/10`;
+          document.getElementById("kpiConfidence").textContent = `${Math.round(confidence*100)}%`;
+          document.getElementById("kpiMode").textContent = (mode === "fallback")
+            ? "規則量化 + AI 文案（失敗自動 fallback）"
+            : "規則量化 + AI 文案（Hybrid）";
+
+          // Debug：你現在就看這三行就知道為什麼沒數值
+          console.log("value_metrics =", metrics);
+          console.log("radar(final) =", radar);
+          console.log("bar(final) =", bar);
+
+          // ---------- 5) 畫圖 ----------
+          const radarCtx = document.getElementById("radarChart");
+          if (radarCtx && radar.labels?.length) {
+            new Chart(radarCtx, {
+              type: "radar",
+              data: {
+                labels: radar.labels,
+                datasets: [{
+                  label: "Value Dimensions",
+                  data: radar.data,
+                  borderWidth: 2,
+                  fill: true
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { r: { suggestedMin: 0, suggestedMax: 100, ticks: { stepSize: 20 } } },
+                plugins: { legend: { display: false } }
+              }
+            });
+
+            const topIdx = radar.data.map((v,i)=>({v,i}))
+              .sort((a,b)=>b.v-a.v)
+              .slice(0,2)
+              .map(x=>x.i);
+
+            const topText = topIdx.map(i=>`${radar.labels[i]}（${radar.data[i]}）`).join("、");
+            document.getElementById("radarExplain").textContent =
+              `高分維度：${topText}。系統會把高分維度視為你的「決策偏好」，並把建議拆成「補底座 → 建結構 → 做優化」三層。`;
+          }
+
+          const barCtx = document.getElementById("barChart");
+          if (barCtx && bar.labels?.length) {
+            new Chart(barCtx, {
+              type: "bar",
+              data: {
+                labels: bar.labels,
+                datasets: [{
+                  label: "Answer Score (0-100)",
+                  data: bar.data,
+                  borderWidth: 1
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { suggestedMin: 0, suggestedMax: 100 } },
+                plugins: { legend: { display: false } }
+              }
+            });
+
+            const maxV = Math.max(...bar.data);
+            const maxI = bar.data.indexOf(maxV);
+            document.getElementById("barExplain").textContent =
+              `分數最高題：${bar.labels[maxI]}（${maxV}）。「這題最能代表使用者的核心偏好，因此對策略權重最大」。`;
+          }
+
+          // ---------- 6) 下面你的洞察/優勢/盲點/策略/下一步（保留你原本的產生邏輯即可） ----------
+          const D = {};
+          radar.labels.forEach((k, i)=> D[k] = radar.data[i]);
+
+          function li(text){ const el = document.createElement("li"); el.textContent = text; return el; }
+          function fillList(id, items){
+            const ul = document.getElementById(id);
+            if (!ul) return;
+            ul.innerHTML = "";
+            items.forEach(t=> ul.appendChild(li(t)));
+          }
+
+          const insights = [];
+          if (D["保障安全感需求"] >= 70) insights.push("你對「保障確定性」的需求偏高：規劃時會更重視條款覆蓋、理賠可預期性與續保條件。");
+          if (D["風險承受度"] <= 40) insights.push("你偏向避免波動：面對高風險/高變動的方案容易觀望，適合用「分段投入 + 先做底層保障」降低心理門檻。");
+          if (D["家庭責任導向"] >= 60) insights.push("你有明顯的家庭責任感：你會把「家人風險」視為一級事件，因此規劃順序會優先補齊意外/醫療/壽險責任。");
+          if (D["健康風險敏感度"] >= 65) insights.push("你對健康風險較敏感：會重視住院/手術/重大傷病的支出風險控管，適合強化醫療保障的結構完整性。");
+          if (D["長期規劃程度"] >= 65) insights.push("你有長期規劃能力：能接受「短期保費換長期確定性」的策略，適合把保障與長照/退休目標做對齊。");
+          if (D["性價比/流動性偏好"] >= 65) insights.push("你重視成本與彈性：傾向挑選可調整/可替換的方案，規劃上適合採「核心主約 + 模組化附加」避免綁死。");
+
+          if (insights.length < 3){
+            insights.push("你的各維度分數較均衡：規劃上可採「先補底座、再視預算逐步加強」的穩健策略。");
+            insights.push("你的偏好不是極端型：代表你對方案的接受度較高，但也需要更明確的優先順序來避免保費失衡。");
+            insights.push("建議用 1–2 次迭代完成規劃：第一版補缺口，第二版再做成本最佳化與條款微調。");
+          }
+          fillList("insightsList", insights.slice(0,3));
+
+          const strengths = [
+            (D["長期規劃程度"] >= 60) ? "你能把短期選擇對齊長期目標，較不易在波動中頻繁換策略。" : "你具備策略彈性，能在不同方案中快速找到可接受的平衡點。",
+            (D["家庭責任導向"] >= 55) ? "你能把家庭責任量化成規劃順序，讓保障更有方向。" : "你以個人需求為核心，能避免為了外部期待而買到不必要的保障。",
+            (D["性價比/流動性偏好"] >= 60) ? "你對成本與效益敏感，能有效避免保費失衡與保障重複。" : "你對條款與保障細節的容忍度高，容易接受「先把底座補齊」的規劃方式。"
+          ];
+          fillList("strengthList", strengths);
+
+          const blindspots = [];
+          if (D["風險承受度"] >= 75) blindspots.push("你可能高估自己的風險承受度：建議用情境測試（醫療突發/收入中斷）驗證保費承擔是否穩定。");
+          if (D["保障安全感需求"] <= 40) blindspots.push("你可能低估保障確定性的價值：在極端事件下，條款覆蓋與續保條件會直接影響風險落點。");
+          if (D["性價比/流動性偏好"] >= 75) blindspots.push("你可能過度追求彈性與低成本：容易讓保障結構鬆散，建議先把核心缺口補齊再談最佳化。");
+          if (D["健康風險敏感度"] <= 40) blindspots.push("你可能低估健康風險：醫療通膨與自費項目會讓小概率事件變成高金額衝擊。");
+          if (blindspots.length < 3){
+            blindspots.push("建議你做一次保單盤點：確認是否有保障重疊、空缺與條款落差（例如實支上限、除外責任）。");
+            blindspots.push("如果你容易猶豫不決，建議先用「最低必要保障」快速落地，再逐步增加配置。");
+            blindspots.push("若有家庭責任，務必把「收入中斷」風險納入（意外/失能/壽險責任），避免只看醫療面。");
+          }
+          fillList("blindspotList", blindspots.slice(0,3));
+
+          const layer1 = [];
+          layer1.push("先處理高頻高衝擊：意外與醫療缺口（住院/手術/重大傷病）。");
+          layer1.push("用「可承擔保費」設上限，確保底座穩定不中斷。");
+          document.getElementById("layer1").textContent = layer1.join(" ");
+
+          const layer2 = [];
+          if (D["家庭責任導向"] >= 60){
+            layer2.push("家庭責任偏高：補壽險責任（身故/失能/收入替代）→ 把風險轉嫁到保單而非家庭現金流。");
+          } else {
+            layer2.push("家庭責任中低：以個人保障為核心 → 先把醫療/意外結構做完整，再視需求加長照/退休。");
+          }
+          layer2.push("再依長期規劃程度調整繳費年期與保障期限，避免短期壓力太大。");
+          document.getElementById("layer2").textContent = layer2.join(" ");
+
+          const layer3 = [];
+          if (D["性價比/流動性偏好"] >= 65){
+            layer3.push("重視性價比/流動性：以「模組化」思維做最佳化（主約穩定、附加彈性），避免一次買滿。");
+          } else {
+            layer3.push("偏好穩定：用「一體化」思維做收斂（較少變動、保障確定性高），降低管理成本。");
+          }
+          layer3.push("最後再比條款細節、費率與續保條件，做 5–10% 的精修。");
+          document.getElementById("layer3").textContent = layer3.join(" ");
+
+          const nextSteps = [
+            "補充三個關鍵資料以提高精準度：目前保單狀況、可接受月保費區間、是否有家族病史/既往症。",
+            "先做「保障缺口盤點」：醫療實支、重大傷病、意外、壽險責任、長照/失能（依你的雷達圖高分維度排序）。",
+            "完成第一版方案後，再用第二版做優化：保費/條款/續保條件微調，讓保障結構更穩。"
+          ];
+          fillList("nextStepsList", nextSteps);
+        </script>
+
+      {% elif is_insurance %}
+        <!-- =======================
+             推薦保單系統結果頁
+             ======================= -->
+        <div class="stack">
+          <div class="card">
+            <div class="section-title">推薦保單結果</div>
+            <div class="subtle">規則計分 + 資料庫檢索 + AI 顧問文案（繁體中文）</div>
+          </div>
+
+          <div class="card">
+            <div class="h">一、你的摘要（系統解讀）</div>
+            <div class="lead">{{ r.get('person_summary','（未提供摘要）') }}</div>
+          </div>
+
+          <div class="grid-3">
+            <div class="card">
+              <div class="h">二、優先保障方向（Top 3）</div>
+              {% set cats = r.get('top_categories') or [] %}
+              {% if cats and cats|length > 0 %}
+                <ol class="list">
+                  {% for c in cats[:3] %}
+                    <li><b>{{ c.get('name','未命名類別') }}</b> —— {{ c.get('reason','') }}</li>
+                  {% endfor %}
+                </ol>
+              {% else %}
+                <div class="empty">目前沒有 top_categories（可能 scoring 沒回傳）。</div>
+              {% endif %}
+            </div>
+
+            <div class="card">
+              <div class="h">三、下一步建議</div>
+              {% set ns = r.get('next_step') or [] %}
+              {% if ns and ns|length > 0 %}
+                <ul class="list">
+                  {% for x in ns %}
+                    <li>{{ x }}</li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <div class="empty">目前沒有 next_step。</div>
+              {% endif %}
+            </div>
+
+            <div class="card">
+              <div class="h">四、購買 / 比較重點</div>
+              {% set pa = r.get('product_advice') or [] %}
+              {% if pa and pa|length > 0 %}
+                <ul class="list">
+                  {% for x in pa %}
+                    <li>{{ x }}</li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <div class="empty">目前沒有 product_advice。</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="h">五、推薦商品（{{ (r.get('recommended_products') or [])|length }} 個）</div>
+            <div class="subtle">點卡片或按鈕可看完整資料明細</div>
+
+            {% set items = r.get('recommended_products') or [] %}
+            {% if items and items|length > 0 %}
+              <div class="product-grid" style="margin-top:12px;">
+                {% for p in items %}
+                  <div class="product-card">
+                    <div class="product-title">{{ p.get('product_name','（未命名商品）') }}</div>
+
+                    <details class="riders-box">
+                      <summary>▶ 特色摘要（點我展開）</summary>
+                      <div class="riders-list">
+                        <div class="rider-item">
+                          <div class="rider-desc">
+                            {{ (p.get('description') or '見條款細節') }}
+                          </div>
+                        </div>
+                      </div>
+                    </details>
+
+                    <div class="meta-row">
+                      <div class="kv">幣別：<b>{{ p.get('currency') or '見條款細節' }}</b></div>
+                      <div class="kv">繳費期間：<b>{{ p.get('pay_period') or '見條款細節' }}</b></div>
+                      <div class="kv">承保年齡：<b>{{ p.get('insure_age') or '見條款細節' }}</b></div>
+                      <div class="kv">來源：<b>{{ p.get('source') or '見條款細節' }}</b></div>
+                    </div>
+
+                    <div class="btn-row" style="margin-top:12px;">
+                      <a class="btn-link primary" href="{{ url_for('product_detail', product_id=p.get('product_id')) }}">查看商品詳情</a>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="empty" style="margin-top:12px;">
+                目前沒有推薦商品（可能尚未匯入資料或條件過嚴）。<br>
+                建議：先確認 <b>/db_check</b> 是否有資料、或在推薦邏輯中放寬篩選條件。
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% else %}
+        <!-- 不明結構：保底顯示原始 JSON -->
+        <div class="stack">
+          <div class="card">
+            <div class="h">系統回傳資料（原始）</div>
+            <div class="empty">資料結構不是 values / insurance 兩種已知格式，已顯示原始內容供除錯。</div>
+            <pre style="white-space:pre-wrap; margin-top:12px; font-size:12.5px; line-height:1.6;">{{ r | tojson(indent=2, ensure_ascii=False) }}</pre>
+          </div>
+        </div>
+      {% endif %}
+    </main>
+  {% endif %}
+</body>
+</html>

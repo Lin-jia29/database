@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>商品詳情</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="app">
+  <div class="bg"></div>
+
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">AI</div>
+        <div>
+          <div class="title">商品詳情</div>
+          <div class="sub">保單資料展示（資料庫）</div>
+        </div>
+      </div>
+      <div class="actions">
+        <a class="btn" href="/">回首頁</a>
+        <a class="btn" href="javascript:history.back()">回上一頁</a>
+      </div>
+    </header>
+
+    {% if error %}
+      <section class="card"><h3>錯誤</h3><p>{{ error }}</p></section>
+    {% else %}
+      <section class="card">
+        <div class="pc-name" style="font-size:18px; font-weight:800;">
+          {{ product.get('product_name','(未命名)') }}
+        </div>
+        <div class="muted" style="margin-top:6px;">
+          商品 ID：{{ product.get('product_id','') }}
+          {% if product.get('product_code') %}｜商品代號：{{ product.get('product_code') }}{% endif %}
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="card">
+          <h3>基本條件</h3>
+          <ul class="list">
+            <li><b>承保年齡：</b>{{ product.get('insure_age') or '—' }}</li>
+            <li><b>幣別：</b>{{ product.get('currency') or '—' }}</li>
+            <li><b>繳費方式：</b>{{ product.get('pay_type') or '—' }}</li>
+            <li><b>繳費期間：</b>{{ product.get('pay_period') or '—' }}</li>
+            <li><b>主/附約：</b>{{ product.get('main_rider') or '—' }}</li>
+            <li><b>通路：</b>{{ product.get('channel') or '—' }}</li>
+            <li><b>資料來源：</b>{{ product.get('source') or '—' }}</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>商品簡述</h3>
+          <p class="lead">{{ product.get('description') or '—' }}</p>
+
+          {% if product.get('note') %}
+            <div style="margin-top:12px;">
+              <div class="muted" style="font-weight:700;">註記</div>
+              <div>{{ product.get('note') }}</div>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="card">
+          <h3>主要給付項目</h3>
+          <p>{{ product.get('benefits') or '—' }}</p>
+
+          {% if product.get('insurance_period') or product.get('departure') or product.get('target') %}
+            <div style="margin-top:14px;">
+              <div class="muted" style="font-weight:700;">旅行 / 特殊欄位</div>
+              <ul class="list">
+                {% if product.get('insurance_period') %}<li><b>保險期間：</b>{{ product.get('insurance_period') }}</li>{% endif %}
+                {% if product.get('departure') %}<li><b>出發地點：</b>{{ product.get('departure') }}</li>{% endif %}
+                {% if product.get('target') %}<li><b>提供對象：</b>{{ product.get('target') }}</li>{% endif %}
+              </ul>
+            </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>商品條款</h3>
+        <details>
+          <summary>點我展開查看（內容可能較長）</summary>
+          <pre style="white-space:pre-wrap; line-height:1.6; margin-top:10px;">{{ product.get('terms') or '—' }}</pre>
+        </details>
+      </section>
+    {% endif %}
+  </main>
+</body>
+</html>

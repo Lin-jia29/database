@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <meta name="theme-color" content="#007bff">
+
+  <!-- iOS 主畫面圖示與全螢幕 -->
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>首頁｜測驗選擇</title>
+
+  <!-- 不用 url_for，固定走 /static -->
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="/static/script.js" defer></script>
+</head>
+
+<body class="app">
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("{{ url_for('static', filename='service-worker.js') }}");
+      });
+    }
+  </script>
+
+  <div class="bg"></div>
+
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">AI</div>
+        <div class="brand-text">
+          <div class="title">AI 測驗中心</div>
+          <div class="subtitle">請選擇你要進行的測驗</div>
+        </div>
+      </div>
+    </header>
+
+    <section class="home">
+      <div class="home-grid">
+        <a class="home-card" href="/quiz/insurance">
+          <div class="home-card__badge">9 題</div>
+          <div class="home-card__title">推薦保單系統</div>
+          <div class="home-card__desc">
+            透過簡短問答，整理你的保障需求，推薦適合的保險方向與下一步。
+          </div>
+          <div class="home-card__cta">開始測驗</div>
+        </a>
+
+        <a class="home-card" href="/quiz/values">
+          <div class="home-card__badge">12 題</div>
+          <div class="home-card__title">價值觀分析系統</div>
+          <div class="home-card__desc">
+            依你的價值觀與情境偏好，生成繁體中文人格分析與投保建議。
+          </div>
+          <div class="home-card__cta">開始測驗</div>
+        </a>
+      </div>
+
+      <div class="home-footnote">
+        提示：每個題目都會提供選項，同時也可自行輸入補充文字。
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ quiz_title }}｜問卷</title>
+
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="/static/script.js" defer></script>
+</head>
+
+<body class="app" data-quiz="insurance">
+  <div class="bg"></div>
+
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">AI</div>
+        <div class="brand-text">
+          <div class="title">{{ quiz_title }}</div>
+          <div class="subtitle">卡片式對話問答（可選擇也可自由輸入）</div>
+        </div>
+      </div>
+
+      <div>
+        <a class="btn secondary" href="/">回首頁</a>
+      </div>
+    </header>
+
+    <section class="chat-wrap" id="chatWrap">
+      <div class="chat-head">
+        <div>
+          <div class="h-title">推薦保單系統</div>
+          <div class="h-sub">共 9 題｜完成後會產出繁體中文分析與推薦方向</div>
+        </div>
+        <div class="note" id="progressText">進度：0 / 9</div>
+      </div>
+
+      <div class="chat-body" id="chatBody">
+        <!-- JS 會把 AI 問題卡片一題題塞進來 -->
+      </div>
+
+      <div class="chat-input">
+        <input id="freeText" type="text" placeholder="你也可以在這裡補充自己的文字（選填）" />
+        <button class="btn" id="sendFreeText">送出文字</button>
+      </div>
+    </section>
+
+    <div class="note" style="margin-top:12px;">
+      提示：你可以只點選選項，也可以額外輸入文字補充；系統會把兩者都記錄下來。
+    </div>
+  </main>
+
+  <script>
+    // 將 quiz_id / 題目定義交給 script.js 統一處理
+    window.__QUIZ_CONFIG__ = {
+      quiz_id: "insurance",
+      total: 9,
+      title: "推薦保單系統"
+    };
+  </script>
+</body>
+</html>

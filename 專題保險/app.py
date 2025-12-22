@@ -29,13 +29,14 @@ if "recs" not in st.session_state: st.session_state.recs = []
 # --- 2. SQL 資料庫初始化 (自動讀取並清洗) ---
 @st.cache_resource
 def init_db():
+    # 加上 "專題保險/" 前綴
     all_files = [
-        "投資型保險.xlsx", "長期照顧.xlsx", "旅行險.xlsx", "健康醫療.xlsx",
-        "意外傷害.xlsx", "團體保險自組商品.xlsx", "團體保險套裝商品.xlsx",
-        "壽險保障.xlsx", "網路投保商品.xlsx", "銀行保險商品_投資型.xlsx",
-        "銀行保險商品_健康險.xlsx", "銀行保險商品_定期險.xlsx",
-        "銀行保險商品_終身險(外幣).xlsx", "銀行保險商品_終身險(新台幣).xlsx",
-        "還本_增額_年金保險.xlsx"
+        "專題保險/投資型保險.xlsx", "專題保險/長期照顧.xlsx", "專題保險/旅行險.xlsx", 
+        "專題保險/健康醫療.xlsx", "專題保險/意外傷害.xlsx", "專題保險/團體保險自組商品.xlsx", 
+        "專題保險/團體保險套裝商品.xlsx", "專題保險/壽險保障.xlsx", "專題保險/網路投保商品.xlsx", 
+        "專題保險/銀行保險商品_投資型.xlsx", "專題保險/銀行保險商品_健康險.xlsx", 
+        "專題保險/銀行保險商品_定期險.xlsx", "專題保險/銀行保險商品_終身險(外幣).xlsx", 
+        "專題保險/銀行保險商品_終身險(新台幣).xlsx", "專題保險/還本_增額_年金保險.xlsx"
     ]
     conn = sqlite3.connect(':memory:', check_same_thread=False)
     combined_list = []

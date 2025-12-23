@@ -182,7 +182,7 @@
           <div class="logo">AI</div>
           <div class="brand-text">
             <div class="title">測驗結果</div>
-            <div class="subtitle">規則 / 資料庫 + AI 文案（繁體中文）</div>
+            <div class="subtitle">規則 / 資料庫</div>
           </div>
         </div>
         <div class="btn-row">
@@ -217,7 +217,7 @@
             <div class="badge-row">
               <span class="pill gray">填答完整度：<b id="kpiCompletion">—</b></span>
               <span class="pill gray">信心指標：<b id="kpiConfidence">—</b></span>
-              <span class="pill warn">輸出模式：<b id="kpiMode">規則量化 + AI 文案（若失敗自動 fallback）</b></span>
+              <span class="pill warn">輸出模式：<b id="kpiMode">規則量化（若失敗自動 fallback）</b></span>
             </div>
 
             <div class="divider"></div>
@@ -431,8 +431,8 @@
           document.getElementById("kpiCompletion").textContent = `${completion}/10`;
           document.getElementById("kpiConfidence").textContent = `${Math.round(confidence*100)}%`;
           document.getElementById("kpiMode").textContent = (mode === "fallback")
-            ? "規則量化 + AI 文案（失敗自動 fallback）"
-            : "規則量化 + AI 文案（Hybrid）";
+            ? "規則量化（失敗自動 fallback）"
+            : "規則量化（Hybrid）";
 
           // Debug：你現在就看這三行就知道為什麼沒數值
           console.log("value_metrics =", metrics);
@@ -581,7 +581,7 @@
         <div class="stack">
           <div class="card">
             <div class="section-title">推薦保單結果</div>
-            <div class="subtle">規則計分 + 資料庫檢索 + AI 顧問文案（繁體中文）</div>
+            <div class="subtle">資料庫檢索</div>
           </div>
 
           <div class="card">
